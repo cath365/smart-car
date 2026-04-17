@@ -4,9 +4,70 @@
 #include <ESPmDNS.h>
 #include "esp_camera.h"
 
-const char* ssid     = "TP-Link_4B76";
-const char* password = "73005780";
 const char* hostname = "smartcar-cam";  // → http://smartcar-cam.local:81
+
+// ─────────────── WIFI NETWORKS (add your networks here) ───────────────
+struct WiFiNetwork {
+  const char* ssid;
+  const char* password;
+};
+
+WiFiNetwork knownNetworks[] = {
+  {"TP-Link_4B76", "73005780"},           // Home WiFi
+  {"MyPhoneHotspot", "hotspot123"},       // Phone hotspot (change this!)
+  // Add more networks as needed:
+  // {"OtherNetwork", "password"},
+};
+const int numNetworks = sizeof(knownNetworks) / sizeof(knownNetworks[0]);
+
+// Auto-scan and connect to best available network
+bool connectToWiFi() {
+  Serial.println("Scanning for WiFi networks...");
+  int n = WiFi.scanNetworks();
+  if (n == 0) {
+    Serial.println("No networks found!");
+    return false;
+  }
+  Serial.printf("Found %d networks\n", n);
+  
+  // Find the strongest known network
+  int bestRssi = -999;
+  int bestIndex = -1;
+  for (int i = 0; i < n; i++) {
+    String foundSSID = WiFi.SSID(i);
+    int rssi = WiFi.RSSI(i);
+    Serial.printf("  %s (%d dBm)\n", foundSSID.c_str(), rssi);
+    for (int j = 0; j < numNetworks; j++) {
+      if (foundSSID == knownNetworks[j].ssid && rssi > bestRssi) {
+        bestRssi = rssi;
+        bestIndex = j;
+      }
+    }
+  }
+  WiFi.scanDelete();
+  
+  if (bestIndex < 0) {
+    Serial.println("No known networks found!");
+    return false;
+  }
+  
+  Serial.printf("Connecting to: %s\n", knownNetworks[bestIndex].ssid);
+  WiFi.begin(knownNetworks[bestIndex].ssid, knownNetworks[bestIndex].password);
+  
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 30) {
+    delay(500);
+    Serial.print(".");
+    attempts++;
+  }
+  Serial.println();
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.printf("Connected! IP: %s\n", WiFi.localIP().toString().c_str());
+    return true;
+  }
+  return false;
+}
 
 // AI-Thinker ESP32-CAM pinout
 #define PWDN_GPIO_NUM     32
@@ -83,10 +144,12 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.setHostname(hostname);
   WiFi.setAutoReconnect(true);
-  WiFi.begin(ssid, password);
-  Serial.print("Connecting");
-  while (WiFi.status() != WL_CONNECTED) { delay(400); Serial.print("."); }
-  Serial.println();
+  
+  // Scan and connect to available network
+  while (!connectToWiFi()) {
+    Serial.println("Retrying in 5 seconds...");
+    delay(5000);
+  }
   Serial.print("Cam IP: "); Serial.println(WiFi.localIP());
 
   if (MDNS.begin(hostname)) {
@@ -103,7 +166,7 @@ void loop() {
   server.handleClient();
   // Auto-reconnect WiFi if dropped
   if (WiFi.status() != WL_CONNECTED) {
-    WiFi.reconnect();
-    delay(500);
+    Serial.println("WiFi lost, reconnecting...");
+    connectToWiFi();
   }
 }
