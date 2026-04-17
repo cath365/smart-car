@@ -564,6 +564,66 @@ button.primary:hover { transform: translateY(-1px); }
 #signalVal.offline { color: var(--red); text-shadow: 0 0 10px rgba(255, 59, 59, 0.4); font-size: 13px; letter-spacing: 2px; }
 #signalVal.strong  { color: var(--phosphor); text-shadow: 0 0 10px rgba(0, 255, 136, 0.4); font-size: 13px; letter-spacing: 2px; }
 
+/* ─────────────────── VEHICLE STATUS ─────────────────── */
+
+.vehicle-status { font-size: 13px; letter-spacing: 2px; }
+.vehicle-status.online {
+  color: var(--phosphor);
+  text-shadow: 0 0 12px rgba(0, 255, 136, 0.6);
+}
+.vehicle-status.offline {
+  color: var(--red);
+  text-shadow: 0 0 10px rgba(255, 59, 59, 0.4);
+}
+
+/* ─────────────────── SPEED CONTROL ─────────────────── */
+
+.speed-control {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.speed-control label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.speed-control label output {
+  color: var(--phosphor);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+}
+.speed-control input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  -webkit-appearance: none;
+}
+.speed-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--phosphor);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+}
+.speed-control input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--phosphor);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+  border: none;
+}
+
 /* ─────────────────── OBSTACLE INDICATOR ─────────────────── */
 
 .obstacle-clear { color: var(--phosphor); font-size: 13px; letter-spacing: 2px; }

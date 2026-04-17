@@ -74,10 +74,21 @@ def create_app(vision, motors, servos=None):
 
     async def _broadcast():
         while True:
-            if ws_clients:
+            if ws_clients and vision:
                 snap = dict(vision.status)
                 snap["stream_url"] = "/stream"
                 data = json.dumps(snap)
+                dead = []
+                for ws in ws_clients:
+                    try:
+                        await ws.send_text(data)
+                    except Exception:
+                        dead.append(ws)
+                for ws in dead:
+                    ws_clients.remove(ws)
+            elif ws_clients:
+                # No vision - send minimal status
+                data = json.dumps({"mode": "manual", "stream_url": None, "motor_connected": True})
                 dead = []
                 for ws in ws_clients:
                     try:
@@ -118,12 +129,19 @@ def create_app(vision, motors, servos=None):
 
     @app.get("/status")
     def status(request: Request):
-        s = dict(vision.status)
-        s["stream_url"] = _proxied_stream_url(request)
-        return s
+        motor_ok = motors.is_connected() if motors else False
+        if vision:
+            s = dict(vision.status)
+            s["stream_url"] = _proxied_stream_url(request)
+            s["motor_connected"] = motor_ok
+            return s
+        else:
+            return {"mode": "manual", "stream_url": None, "motor_connected": motor_ok}
 
     @app.get("/stream")
     def stream_proxy():
+        if not vision:
+            raise HTTPException(503, "no camera configured")
         upstream = vision.cam_url
         try:
             r = requests.get(upstream, stream=True, timeout=(5, None))
@@ -148,6 +166,8 @@ def create_app(vision, motors, servos=None):
 
     @app.post("/mode", dependencies=[Depends(require_token)])
     def set_mode(req: ModeReq):
+        if not vision:
+            raise HTTPException(503, "no camera configured - only manual mode available")
         try:
             vision.set_mode(req.mode)
         except ValueError as e:
@@ -156,6 +176,8 @@ def create_app(vision, motors, servos=None):
 
     @app.post("/color", dependencies=[Depends(require_token)])
     def set_color(req: ColorReq):
+        if not vision:
+            raise HTTPException(503, "no camera configured")
         try:
             vision.set_color(req.preset)
         except ValueError as e:
@@ -164,7 +186,10 @@ def create_app(vision, motors, servos=None):
 
     @app.post("/drive", dependencies=[Depends(require_token)])
     def drive(req: DriveReq):
-        vision.manual_drive(req.l, req.r)
+        if vision:
+            vision.manual_drive(req.l, req.r)
+        else:
+            motors.drive(req.l, req.r)
         return {"ok": True}
 
     @app.post("/stop", dependencies=[Depends(require_token)])
@@ -174,11 +199,15 @@ def create_app(vision, motors, servos=None):
 
     @app.post("/select_target", dependencies=[Depends(require_token)])
     def select_target(req: SelectTargetReq):
+        if not vision:
+            raise HTTPException(503, "no camera configured")
         vision.select_target(index=req.index, x=req.x, y=req.y)
         return {"ok": True}
 
     @app.get("/tune")
     def get_tune():
+        if not vision:
+            return {"kp": 0, "ki": 0, "kd": 0, "base_speed": 100, "target_area": 5000}
         return {
             "kp": vision.kp, "ki": vision.ki, "kd": vision.kd,
             "base_speed": vision.base_speed,
@@ -187,6 +216,8 @@ def create_app(vision, motors, servos=None):
 
     @app.post("/tune", dependencies=[Depends(require_token)])
     def set_tune(req: TuneReq):
+        if not vision:
+            raise HTTPException(503, "no camera configured")
         if req.kp is not None:
             vision.kp = max(0.0, min(2.0, req.kp))
         if req.ki is not None:
@@ -201,6 +232,8 @@ def create_app(vision, motors, servos=None):
 
     @app.get("/intel")
     def get_intel():
+        if not vision:
+            return {"scene": "No camera connected", "objects": [], "threats": []}
         return vision.intel.get_report()
 
     @app.post("/servo", dependencies=[Depends(require_token)])

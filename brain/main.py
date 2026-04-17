@@ -9,7 +9,7 @@ from vision import Vision
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--cam",   required=True, help="e.g. http://192.168.1.51:81/stream")
+    ap.add_argument("--cam",   default=None, help="e.g. http://192.168.1.51:81/stream (optional)")
     ap.add_argument("--motor", required=True, help="e.g. http://192.168.1.50")
     ap.add_argument("--servo", default=None,  help="e.g. http://192.168.1.52 (optional)")
     ap.add_argument("--host",  default="0.0.0.0")
@@ -18,8 +18,13 @@ def main():
 
     motors = MotorClient(args.motor)
     servos = ServoClient(args.servo) if args.servo else None
-    vision = Vision(args.cam, motors)
-    vision.start()
+    
+    vision = None
+    if args.cam:
+        vision = Vision(args.cam, motors)
+        vision.start()
+    else:
+        print("WARNING: No camera specified, running motor-only mode")
 
     app = create_app(vision, motors, servos)
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")

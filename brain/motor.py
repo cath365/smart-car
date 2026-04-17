@@ -6,6 +6,14 @@ class MotorClient:
         self.base = base_url.rstrip("/")
         self.session = requests.Session()
 
+    def is_connected(self):
+        """Check if motor board is reachable."""
+        try:
+            r = self.session.get(f"{self.base}/", timeout=0.5)
+            return r.status_code == 200
+        except requests.RequestException:
+            return False
+
     def drive(self, left, right):
         try:
             self.session.get(

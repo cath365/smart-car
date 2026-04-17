@@ -97,6 +97,10 @@
 
       <div class="card stats-grid" style="grid-template-columns:1fr 1fr 1fr">
         <div class="stat">
+          <span class="stat-label">VEHICLE</span>
+          <span class="stat-value vehicle-status" id="vehicleVal">OFFLINE</span>
+        </div>
+        <div class="stat">
           <span class="stat-label">RSSI</span>
           <span class="stat-value" id="rssiVal">--</span>
           <span class="stat-unit">dBm</span>
@@ -199,6 +203,10 @@
         <div class="card-head">
           <span class="card-title">◢ DRIVE CONTROL</span>
           <span class="card-meta" id="driveMeta">L 000 · R 000</span>
+        </div>
+        <div class="speed-control">
+          <label>DRIVE SPEED <output id="driveSpeedVal">150</output></label>
+          <input type="range" id="driveSpeedSlider" min="50" max="255" step="5" value="150" />
         </div>
         <div class="joystick-wrap">
           <div class="joystick" id="joy">

@@ -18,11 +18,13 @@ const state = {
   color: "red",
   joyX: 0,
   joyY: 0,
+  driveSpeed: 150,
   pollTimer: null,
   driveTimer: null,
   clockTimer: null,
   sessionStart: Date.now(),
   link: "offline",
+  vehicleOnline: false,
   lastStatus: null,
   lastStatusMs: 0,
   missedPolls: 0,
@@ -91,6 +93,16 @@ setupJoystick($("joy"), $("joyStick"), (x, y) => {
   state.joyY = y;
   $("driveMeta").textContent = driveMetaText();
 });
+
+// Drive speed slider
+const driveSpeedSlider = $("driveSpeedSlider");
+if (driveSpeedSlider) {
+  driveSpeedSlider.addEventListener("input", () => {
+    state.driveSpeed = parseInt(driveSpeedSlider.value, 10);
+    $("driveSpeedVal").textContent = driveSpeedSlider.value;
+    $("driveMeta").textContent = driveMetaText();
+  });
+}
 
 // Servo slider events
 ["pan", "tilt"].forEach((key) => {
@@ -321,6 +333,15 @@ function setLinkPill(kind) {
 
 function applyStatus(s) {
   if (!s) return;
+
+  // Vehicle (motor board) status
+  const vehicleEl = $("vehicleVal");
+  if (vehicleEl) {
+    const online = s.motor_connected !== false; // Assume online unless explicitly false
+    state.vehicleOnline = online;
+    vehicleEl.textContent = online ? "ONLINE" : "OFFLINE";
+    vehicleEl.className = "stat-value vehicle-status " + (online ? "online" : "offline");
+  }
 
   $("fpsVal").textContent = (s.fps ?? 0).toFixed(1);
 
@@ -823,20 +844,22 @@ async function sendTune() {
 }
 
 function driveMetaText() {
-  const forward = Math.round(-state.joyY * 200);
-  const turn    = Math.round( state.joyX * 180);
+  const speed = state.driveSpeed;
+  const forward = Math.round(-state.joyY * speed);
+  const turn    = Math.round( state.joyX * (speed * 0.9));
   const l = clamp(forward + turn, -255, 255);
   const r = clamp(forward - turn, -255, 255);
   const fmt = (v) => String(Math.abs(v)).padStart(3, "0") + (v < 0 ? "-" : v > 0 ? "+" : " ");
-  return `L ${fmt(l)} · R ${fmt(r)}`;
+  return `L ${fmt(l)} \u00b7 R ${fmt(r)}`;
 }
 
 async function driveTick() {
   if (state.mode !== "manual") return;
   if (!state.brainUrl) return;
   if (state.driveInFlight) return;
-  const forward = Math.round(-state.joyY * 200);
-  const turn    = Math.round( state.joyX * 180);
+  const speed = state.driveSpeed;
+  const forward = Math.round(-state.joyY * speed);
+  const turn    = Math.round( state.joyX * (speed * 0.9));
   const l = clamp(forward + turn, -255, 255);
   const r = clamp(forward - turn, -255, 255);
   if (state.driveAbort) state.driveAbort.abort();
