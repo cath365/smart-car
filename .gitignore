@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# Models / large files downloaded at runtime
+*.pt
+*.onnx
+*.bin
+
+# PlatformIO / Arduino
+.pio/
+.pioenvs/
+.piolibdeps/
+build/
+*.hex
+*.elf
+compile_log.txt
+
+# Flutter
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/build/
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Secrets
+firmware/**/secrets.h
+.env
+.env.local

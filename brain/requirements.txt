@@ -1,0 +1,6 @@
+opencv-python>=4.9
+numpy>=1.26
+requests>=2.31
+fastapi>=0.110
+uvicorn[standard]>=0.27
+ultralytics>=8.1
